@@ -10,6 +10,32 @@ class RecipientSpecs(BaseModel):
     universals: dict[str, PhoneNumberUSA] = {}
     groups: dict[str, dict[str, PhoneNumberUSA] | PhoneNumberUSA] = {}
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "universals": {
+                    "Business Partner": "+15555555555",
+                },
+                "groups": {
+                    "Team 1": {
+                        "John": "+15555555551",
+                        "Paul": "+15555555552",
+                        "George": "+15555555553",
+                        "Ringo": "+15555555554",
+                    },
+                    "Team 2": {
+                        "Roland O": "+15555555556",
+                        "Curt S": "+15555555557",
+                    },
+                    "Adam Y": "+15555555558",
+                }
+            }
+        }
+
+    @classmethod
+    def example_json(cls) -> str:
+        return cls.model_validate(cls.Config.json_schema_extra["example"]).model_dump_json(indent=2)
+
 
 def load_data(group_specs_filepath: Path) -> list[tuple[str, list[PhoneNumberUSA]]]:
     with open(group_specs_filepath, "r", encoding="utf-8") as f:
