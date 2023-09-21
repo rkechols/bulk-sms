@@ -19,7 +19,7 @@ Brief descriptions of what's in this repo:
 You'll likely need the following environment variables set:
 - `PUSHBULLET_API_KEY`: access token
     (can get this from https://www.pushbullet.com/#settings > Account)
-- `PUSHBULLET_DEVICE_IDEN`: ID of the mobile phone that will be sending SMS
+- `PUSHBULLET_DEVICE_ID`: ID of the mobile phone that will be sending SMS
     (see https://docs.pushbullet.com/#list-devices for help getting this ID)
 
 ### Python packages

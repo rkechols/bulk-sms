@@ -61,7 +61,7 @@ class PushBullet:
         self._headers = {
             "Access-Token": api_key,
         }
-        self._device_iden = device_iden or os.environ["PUSHBULLET_DEVICE_IDEN"]
+        self._device_iden = device_iden or os.environ["PUSHBULLET_DEVICE_ID"]
         self._httpx_client_lock = threading.Lock() if httpx_client is None else None
         self._httpx_client = httpx_client
 
