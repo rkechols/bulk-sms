@@ -62,20 +62,8 @@ class PushBullet:
         self._headers = {
             "Authorization": f"Basic {api_key}",
             "Accept": "*/*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-US,en;q=0.9,sr-RS;q=0.8,sr;q=0.7,bs-BA;q=0.6,bs;q=0.5,sl-SI;q=0.4,sl;q=0.3,es-US;q=0.2,es;q=0.1,de-DE;q=0.1,de;q=0.1,hr-HR;q=0.1,hr;q=0.1",
             "Api-Version": "2014-05-07",
             "Content-Type": "application/json",
-            "Origin": "https://www.pushbullet.com",
-            "Referer": "https://www.pushbullet.com/",
-            "Sec-Ch-Ua": '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-site",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
-            "X-User-Agent": "Pushbullet Website 162",
         }
         self._device_iden = device_iden or os.environ["PUSHBULLET_DEVICE_ID"]
         self._httpx_client_lock = threading.Lock() if httpx_client is None else None
