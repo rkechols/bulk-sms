@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from pushbullet_api_v3 import PhoneNumberUSA, PushBullet
+from pushbullet_api import PhoneNumberUSA, PushBullet
 
 
 class RecipientSpecs(BaseModel):

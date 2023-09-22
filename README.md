@@ -43,14 +43,14 @@ from send_bulk_sms import RecipientSpecs
 print(RecipientSpecs.example_json())
 ```
 
-### pushbullet_api_v2.py
+### pushbullet_api.py
 
 See docstrings inside the file for full explanations of functionality
 
 Example usage:
 ```python
 import asyncio
-from pushbullet_api_v2 import PushBullet, APIError
+from pushbullet_api import PushBullet, APIError
 
 async def main():
     async with PushBullet() as pb:

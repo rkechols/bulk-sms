@@ -50,7 +50,7 @@ class APIError(Exception):
 
 
 class PushBullet:
-    PUSHBULLET_API_URL = "https://api.pushbullet.com/v3"
+    PUSHBULLET_API_URL = "https://api.pushbullet.com"
 
     def __init__(
             self,
@@ -115,7 +115,7 @@ class PushBullet:
             guid=message_uid,
         ))
         response = await client.post(
-            f"{self.PUSHBULLET_API_URL}/create-text",
+            f"{self.PUSHBULLET_API_URL}/v3/create-text",
             json=request.model_dump(),
             headers=self._headers,
         )
