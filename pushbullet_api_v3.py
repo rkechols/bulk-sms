@@ -2,6 +2,7 @@ import os
 import re
 import threading
 from typing import Optional
+from uuid import uuid4
 
 import httpx
 from pydantic import BaseModel, Field
@@ -19,8 +20,8 @@ __all__ = [
 
 
 def validate_phone_number_usa(value: str) -> str:
-    if re.fullmatch(r"\+1\d{10}", value) is None:
-        raise ValueError("not recognized as valid USA phone number; use E.164 format")
+    if re.fullmatch(r"\d{10}", value) is None:
+        raise ValueError("not recognized as valid USA phone number; please write 10 digits with no other symbols or spaces")
     return value
 
 PhoneNumberUSA = Annotated[str, AfterValidator(validate_phone_number_usa)]
@@ -49,7 +50,7 @@ class APIError(Exception):
 
 
 class PushBullet:
-    PUSHBULLET_API_URL = "https://api.pushbullet.com/v2"
+    PUSHBULLET_API_URL = "https://api.pushbullet.com/v3"
 
     def __init__(
             self,
@@ -59,7 +60,22 @@ class PushBullet:
     ):
         api_key = api_key or os.environ["PUSHBULLET_API_KEY"]
         self._headers = {
-            "Access-Token": api_key,
+            "Authorization": f"Basic {api_key}",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.9,sr-RS;q=0.8,sr;q=0.7,bs-BA;q=0.6,bs;q=0.5,sl-SI;q=0.4,sl;q=0.3,es-US;q=0.2,es;q=0.1,de-DE;q=0.1,de;q=0.1,hr-HR;q=0.1,hr;q=0.1",
+            "Api-Version": "2014-05-07",
+            "Content-Type": "application/json",
+            "Origin": "https://www.pushbullet.com",
+            "Referer": "https://www.pushbullet.com/",
+            "Sec-Ch-Ua": '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+            "X-User-Agent": "Pushbullet Website 162",
         }
         self._device_iden = device_iden or os.environ["PUSHBULLET_DEVICE_ID"]
         self._httpx_client_lock = threading.Lock() if httpx_client is None else None
@@ -99,10 +115,11 @@ class PushBullet:
                            f"and had a body/payload of {response.text!r}") from e
         return response
 
-    async def send_sms(self, phone_numbers: list[str] | str, message: str, message_uid: Optional[str] = None) -> str:
+    async def send_sms(self, phone_numbers: list[str] | str, message: str) -> str:
         if isinstance(phone_numbers, str):
             phone_numbers = [phone_numbers]
         client = self._ensure_httpx_client()
+        message_uid = str(uuid4()).replace("-", "")[:22]
         request = SendSmsRequest(data=SmsRequestData(
             target_device_iden=self._device_iden,
             addresses=phone_numbers,
@@ -110,7 +127,7 @@ class PushBullet:
             guid=message_uid,
         ))
         response = await client.post(
-            f"{self.PUSHBULLET_API_URL}/texts",
+            f"{self.PUSHBULLET_API_URL}/create-text",
             json=request.model_dump(),
             headers=self._headers,
         )

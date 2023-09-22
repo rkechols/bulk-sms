@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from pushbullet_api_v2 import PhoneNumberUSA, PushBullet
+from pushbullet_api_v3 import PhoneNumberUSA, PushBullet
 
 
 class RecipientSpecs(BaseModel):
@@ -14,20 +14,20 @@ class RecipientSpecs(BaseModel):
         json_schema_extra = {
             "example": {
                 "universals": {
-                    "Business Partner": "+15555555555",
+                    "Business Partner": "5555555555",
                 },
                 "groups": {
                     "Team 1": {
-                        "John": "+15555555551",
-                        "Paul": "+15555555552",
-                        "George": "+15555555553",
-                        "Ringo": "+15555555554",
+                        "John": "5555555551",
+                        "Paul": "5555555552",
+                        "George": "5555555553",
+                        "Ringo": "5555555554",
                     },
                     "Team 2": {
-                        "Roland O": "+15555555556",
-                        "Curt S": "+15555555557",
+                        "Roland O": "5555555556",
+                        "Curt S": "5555555557",
                     },
-                    "Adam Y": "+15555555558",
+                    "Adam Y": "5555555558",
                 }
             }
         }
@@ -37,12 +37,12 @@ class RecipientSpecs(BaseModel):
         return cls.model_validate(cls.Config.json_schema_extra["example"]).model_dump_json(indent=2)
 
 
-def load_data(group_specs_filepath: Path) -> list[tuple[str, list[PhoneNumberUSA]]]:
-    with open(group_specs_filepath, "r", encoding="utf-8") as f:
-        group_specs = RecipientSpecs.model_validate_json(f.read())
-    universals = set(group_specs.universals.values())
+def load_data(recipients_filepath: Path) -> list[tuple[str, list[PhoneNumberUSA]]]:
+    with open(recipients_filepath, "r", encoding="utf-8") as f:
+        recipient_specs = RecipientSpecs.model_validate_json(f.read())
+    universals = set(recipient_specs.universals.values())
     groups = {}
-    for group_name, group in group_specs.groups.items():
+    for group_name, group in recipient_specs.groups.items():
         if isinstance(group, str):  # single phone number
             group_numbers = {group}
         else:  # dict
@@ -61,8 +61,10 @@ async def send_messages(message: str, groups_ordered: list[tuple[str, list[Phone
     return results
 
 
-def main(group_specs_filepath: Path, message: str):
-    groups_ordered = load_data(group_specs_filepath)
+def main(recipients_filepath: Path, message_filepath: Path):
+    groups_ordered = load_data(recipients_filepath)
+    with open(message_filepath, "r", encoding="utf-8") as f:
+        message = f.read()
     # check with the user
     print("----- MESSAGE -----")
     print(message)
@@ -87,7 +89,7 @@ def main(group_specs_filepath: Path, message: str):
 if __name__ == "__main__":
     from argparse import ArgumentParser
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("group_specs_filepath", type=Path)
-    arg_parser.add_argument("--message", "-m", type=str, required=True)
+    arg_parser.add_argument("--recipients", "-r", type=Path, required=True, help="filepath to a JSON file specifying recipient groups")
+    arg_parser.add_argument("--message", "-m", type=Path, required=True, help="filepath to a plain text file containing the message to send")
     args = arg_parser.parse_args()
-    main(args.group_specs_filepath, args.message)
+    main(args.recipients, args.message)

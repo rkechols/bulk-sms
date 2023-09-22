@@ -17,7 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "send_bulk_sms.py",
-            "args": ["recipients.json", "--message", "Hello world, from VS Code"],
+            "args": ["--recipients", "recipients.json", "--message", "message.txt"],
             "console": "integratedTerminal",
             "justMyCode": true
         }
