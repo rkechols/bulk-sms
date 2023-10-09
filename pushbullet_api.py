@@ -83,6 +83,10 @@ class PushBullet:
             "Accept": "*/*",
             "Api-Version": "2014-05-07",
             "Content-Type": "application/json",
+            "Origin": "https://pushbullet.com",
+            "Referer": "https://pushbullet.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+            "X-User-Agent": "Pushbullet Website 162",
         }
         self._device_iden = device_iden or os.environ["PUSHBULLET_DEVICE_ID"]
         self._httpx_client_lock = threading.Lock() if httpx_client is None else None
