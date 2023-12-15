@@ -89,7 +89,9 @@ def main(recipients_filepath: Path, message_filepath: Path):
 if __name__ == "__main__":
     from argparse import ArgumentParser
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("--recipients", "-r", type=Path, required=True, help="filepath to a JSON file specifying recipient groups")
-    arg_parser.add_argument("--message", "-m", type=Path, required=True, help="filepath to a plain text file containing the message to send")
+    arg_parser.add_argument("--recipients", "-r", type=Path, required=True,
+                            help="filepath to a JSON file specifying recipient groups")
+    arg_parser.add_argument("--message", "-m", type=Path, required=True,
+                            help="filepath to a plain text file containing the message to send")
     args = arg_parser.parse_args()
     main(args.recipients, args.message)
