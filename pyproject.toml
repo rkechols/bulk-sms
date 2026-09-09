@@ -37,6 +37,7 @@ pythonPlatform = "All"
 typeCheckingMode = "recommended"
 # Rule adjustments:
 reportAny = "hint"
+reportExplicitAny = false
 reportMissingParameterType = false
 reportUnannotatedClassAttribute = false
 reportUnknownArgumentType = false

@@ -1,6 +1,7 @@
 # ruff: noqa: S603, S607
 
 import asyncio
+import json
 import logging
 import random
 import secrets
@@ -8,18 +9,32 @@ import string
 import subprocess
 from argparse import ArgumentParser
 from contextlib import asynccontextmanager
-from typing import Annotated
+from functools import cache
+from pathlib import Path
+from typing import Annotated, Any
 
-import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
+# import uvicorn
+# from fastapi import Depends, FastAPI, HTTPException, Request, status
+# from fastapi.responses import RedirectResponse
+# from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from bulk_sms.schemas import USAPhoneNumber
 
 DOCS_ROUTE = "/docs"
 
 LOGGER = logging.getLogger(__name__)
+
+JSON_SCHEMAS_DIR = Path(__file__).parent
+
+
+@cache
+def _load_json_schema(name: str) -> dict[str, Any]:
+    with open(JSON_SCHEMAS_DIR / f"{name}.schema.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+BulkSmsRequest = _load_json_schema("BulkSmsRequest")
+BulkSmsResponse = _load_json_schema("BulkSmsResponse")
+# Example usage: jsonschema.validate(payload, BulkSmsRequest)
 
 
 class SmsAccessError(Exception):
