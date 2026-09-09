@@ -21,4 +21,4 @@ trap 'exit 143' TERM
 ssh -R "443:localhost:$PORT" v2@connect.ngrok-agent.com http &
 tunnel_pid=$!
 
-uv run sms-server --port "$PORT"
+uv run --no-default-groups -- sms-server --port "$PORT"
