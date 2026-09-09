@@ -14,9 +14,8 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
 
-from bulk_sms.schemas import Recipients, USAPhoneNumber
+from bulk_sms.schemas import BulkSmsRequest, BulkSmsResponse, USAPhoneNumber
 
 DOCS_ROUTE = "/docs"
 
@@ -71,33 +70,25 @@ async def get_root() -> RedirectResponse:
     return RedirectResponse(DOCS_ROUTE)
 
 
-class BulkSmsRequest(BaseModel):
-    recipients: Recipients
-    message: Annotated[str, Field(min_length=1)]
-
-
-class BulkSmsResponse(BaseModel):
-    groups_succeeded: set[str]
-    groups_failed: set[str]
-
-
 @app.post("/bulk-sms", dependencies=[ValidatePasscodeDep])
 def post_bulk_sms(request_body: BulkSmsRequest) -> BulkSmsResponse:
-    recipients_universal = set(request_body.recipients.copy_on_all.values())
+    recipients_universal = {
+        USAPhoneNumber.normalize(phone_number) for phone_number in request_body["recipients"]["copy_on_all"].values()
+    }
     groups_succeeded: set[str] = set()
     groups_failed: set[str] = set()
-    for group_name, group in request_body.recipients.groups.items():
-        recipients_merged = recipients_universal.union(group)
+    for group_name, group in request_body["recipients"]["groups"].items():
+        recipients_merged = recipients_universal | {USAPhoneNumber.normalize(phone_number) for phone_number in group}
         try:
-            send_sms(request_body.message, recipients_merged)
+            send_sms(request_body["message"], recipients_merged)
         except Exception:
             LOGGER.exception(f"Failed to send bulk SMS for group {group_name!r}")
             groups_failed.add(group_name)
         else:
             groups_succeeded.add(group_name)
     response = BulkSmsResponse(
-        groups_succeeded=groups_succeeded,
-        groups_failed=groups_failed,
+        groups_succeeded=sorted(groups_succeeded),
+        groups_failed=sorted(groups_failed),
     )
     return response
 
