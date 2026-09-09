@@ -1,7 +1,8 @@
-recipients.json
-recipients-backup.json
+recipients*.json
 message.txt
+
 .vscode/settings.json
+.zed/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
