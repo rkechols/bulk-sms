@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 from collections.abc import Callable
 from typing import cast
 
-from flask import Flask, jsonify, redirect, request
+from flask import Flask, jsonify, request
 from flask.typing import ResponseReturnValue
 
 from bulk_sms.schemas import BulkSmsRequest, BulkSmsResponse, USAPhoneNumber
@@ -61,11 +61,6 @@ def validate_passcode(
 
 
 app = Flask(__name__)
-
-
-@app.get("/")
-def get_root() -> ResponseReturnValue:
-    return redirect("/bulk-sms")
 
 
 @app.post("/bulk-sms")
