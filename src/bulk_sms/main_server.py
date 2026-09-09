@@ -1,6 +1,11 @@
+# ruff: noqa: S603, S607
+
+import asyncio
+import logging
 import random
 import secrets
 import string
+import subprocess
 from argparse import ArgumentParser
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -9,15 +14,38 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from bulk_sms.schemas import Recipients
+from bulk_sms.schemas import Recipients, USAPhoneNumber
 
 DOCS_ROUTE = "/docs"
+
+LOGGER = logging.getLogger(__name__)
+
+
+class SmsAccessError(Exception):
+    """Raise when sending an SMS error fails or is not possible"""
+
+
+def ensure_sms_viability():
+    subprocess.run(["termux-sms-send", "-h"], check=True)
+
+
+def send_sms(message: str, recipients: set[USAPhoneNumber]):
+    subprocess.run(
+        [
+            "termux-sms-send",
+            "-n",
+            ",".join(sorted(recipients)),
+            message,
+        ],
+        check=True,
+    )
 
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
+    await asyncio.to_thread(ensure_sms_viability)
     passcode = "".join(random.choices(string.digits + string.ascii_uppercase[:6], k=8))
     app_.state.passcode = passcode
     print(f"PASSCODE: {passcode}")  # noqa: T201
@@ -43,13 +71,35 @@ async def get_root() -> RedirectResponse:
     return RedirectResponse(DOCS_ROUTE)
 
 
-class SendBulkSmsResponse(BaseModel):
-    pass
+class BulkSmsRequest(BaseModel):
+    recipients: Recipients
+    message: Annotated[str, Field(min_length=1)]
 
 
-@app.post("/send-bulk-sms", dependencies=[ValidatePasscodeDep])
-async def send_bulk_sms(request_body: Recipients) -> SendBulkSmsResponse:
-    pass
+class BulkSmsResponse(BaseModel):
+    groups_succeeded: set[str]
+    groups_failed: set[str]
+
+
+@app.post("/bulk-sms", dependencies=[ValidatePasscodeDep])
+def post_bulk_sms(request_body: BulkSmsRequest) -> BulkSmsResponse:
+    recipients_universal = set(request_body.recipients.copy_on_all.values())
+    groups_succeeded: set[str] = set()
+    groups_failed: set[str] = set()
+    for group_name, group in request_body.recipients.groups.items():
+        recipients_merged = recipients_universal.union(group)
+        try:
+            send_sms(request_body.message, recipients_merged)
+        except Exception:
+            LOGGER.exception(f"Failed to send bulk SMS for group {group_name!r}")
+            groups_failed.add(group_name)
+        else:
+            groups_succeeded.add(group_name)
+    response = BulkSmsResponse(
+        groups_succeeded=groups_succeeded,
+        groups_failed=groups_failed,
+    )
+    return response
 
 
 def main():

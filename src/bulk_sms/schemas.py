@@ -16,4 +16,4 @@ type USAPhoneNumber = Annotated[str, AfterValidator(_validate_usa_phone_number)]
 
 class Recipients(BaseModel):
     copy_on_all: dict[str, USAPhoneNumber]
-    groups: dict[str, list[USAPhoneNumber]]
+    groups: dict[str, set[USAPhoneNumber]]
