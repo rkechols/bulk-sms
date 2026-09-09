@@ -1,33 +1,55 @@
 import random
+import secrets
 import string
 from argparse import ArgumentParser
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import uvicorn
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
+
+from bulk_sms.schemas import Recipients
+
+DOCS_ROUTE = "/docs"
 
 
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
-    password = "".join(random.choices(string.digits + string.ascii_uppercase[:6], k=8))
-    app_.state.password = password
-    print(f"PASSWORD: {password}")  # noqa: T201
+    passcode = "".join(random.choices(string.digits + string.ascii_uppercase[:6], k=8))
+    app_.state.passcode = passcode
+    print(f"PASSCODE: {passcode}")  # noqa: T201
     yield
 
 
-def _get_password(request: Request) -> str:
-    return request.app.state.password
+type AuthBearerDep = Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
 
 
-type PasswordDep = Annotated[str, Depends(_get_password)]
+def _validate_passcode(request: Request, auth_bearer: AuthBearerDep):
+    if not secrets.compare_digest(auth_bearer.credentials, request.app.state.passcode):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
 
-app = FastAPI(title="Bulk SMS Server", lifespan=lifespan)
+
+ValidatePasscodeDep = Depends(_validate_passcode)
 
 
-# @app.get("/")
-# async def get_root(password: PasswordDep) -> HTMLResponse:
-#     return HTMLResponse(content=f"<pre>Password: {password}</pre>")
+app = FastAPI(title="Bulk SMS Server", docs_url=DOCS_ROUTE, lifespan=lifespan)
+
+
+@app.get("/")
+async def get_root() -> RedirectResponse:
+    return RedirectResponse(DOCS_ROUTE)
+
+
+class SendBulkSmsResponse(BaseModel):
+    pass
+
+
+@app.post("/send-bulk-sms", dependencies=[ValidatePasscodeDep])
+async def send_bulk_sms(request_body: Recipients) -> SendBulkSmsResponse:
+    pass
 
 
 def main():
