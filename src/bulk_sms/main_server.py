@@ -1,29 +1,21 @@
 # ruff: noqa: S603, S607
 
-import asyncio
 import logging
 import random
 import secrets
 import string
 import subprocess
 from argparse import ArgumentParser
-from contextlib import asynccontextmanager
-from typing import Annotated
+from collections.abc import Callable
+from typing import cast
 
-import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from flask import Flask, jsonify, redirect, request
+from flask.typing import ResponseReturnValue
 
 from bulk_sms.schemas import BulkSmsRequest, BulkSmsResponse, USAPhoneNumber
 
-DOCS_ROUTE = "/docs"
-
 LOGGER = logging.getLogger(__name__)
-
-
-class SmsAccessError(Exception):
-    """Raise when sending an SMS error fails or is not possible"""
+PASSCODE_CONFIG_KEY = "PASSCODE"
 
 
 def ensure_sms_viability():
@@ -42,43 +34,55 @@ def send_sms(message: str, recipients: set[USAPhoneNumber]):
     )
 
 
-@asynccontextmanager
-async def lifespan(app_: FastAPI):
-    await asyncio.to_thread(ensure_sms_viability)
+def initialize_app(app_: Flask) -> None:
+    ensure_sms_viability()
     passcode = "".join(random.choices(string.digits + string.ascii_uppercase[:6], k=8))
-    app_.state.passcode = passcode
+    app_.config[PASSCODE_CONFIG_KEY] = passcode
     print(f"PASSCODE: {passcode}")  # noqa: T201
-    yield
 
 
-type AuthBearerDep = Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())]
+def validate_passcode(
+    view: Callable[..., ResponseReturnValue],
+) -> Callable[..., ResponseReturnValue]:
+    def wrapped_view(*args: object, **kwargs: object) -> ResponseReturnValue:
+        authorization = request.authorization
+        passcode = cast(str, app.config[PASSCODE_CONFIG_KEY])
+        token = authorization.token if authorization is not None else None
+        if (
+            authorization is None
+            or authorization.type.lower() != "bearer"
+            or not isinstance(token, str)
+            or not secrets.compare_digest(token, passcode)
+        ):
+            return "", 401, {"WWW-Authenticate": "Bearer"}
+        return view(*args, **kwargs)
+
+    return wrapped_view
 
 
-def _validate_passcode(request: Request, auth_bearer: AuthBearerDep):
-    if not secrets.compare_digest(auth_bearer.credentials, request.app.state.passcode):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
-
-
-ValidatePasscodeDep = Depends(_validate_passcode)
-
-
-app = FastAPI(title="Bulk SMS Server", docs_url=DOCS_ROUTE, lifespan=lifespan)
+app = Flask(__name__)
 
 
 @app.get("/")
-async def get_root() -> RedirectResponse:
-    return RedirectResponse(DOCS_ROUTE)
+def get_root() -> ResponseReturnValue:
+    return redirect("/bulk-sms")
 
 
-@app.post("/bulk-sms", dependencies=[ValidatePasscodeDep])
-def post_bulk_sms(request_body: BulkSmsRequest) -> BulkSmsResponse:
+@app.post("/bulk-sms")
+@validate_passcode
+def post_bulk_sms() -> ResponseReturnValue:
+    request_body = cast(BulkSmsRequest, request.get_json())
     recipients_universal = {
-        USAPhoneNumber.normalize(phone_number) for phone_number in request_body["recipients"]["copy_on_all"].values()
-    }
+        USAPhoneNumber.normalize(phone_number)
+        for phone_number in request_body["recipients"]["copy_on_all"].values()
+    }  # fmt: skip
     groups_succeeded: set[str] = set()
     groups_failed: set[str] = set()
     for group_name, group in request_body["recipients"]["groups"].items():
-        recipients_merged = recipients_universal | {USAPhoneNumber.normalize(phone_number) for phone_number in group}
+        recipients_merged = recipients_universal | {
+            USAPhoneNumber.normalize(phone_number)
+            for phone_number in group
+        }  # fmt: skip
         try:
             send_sms(request_body["message"], recipients_merged)
         except Exception:
@@ -86,11 +90,11 @@ def post_bulk_sms(request_body: BulkSmsRequest) -> BulkSmsResponse:
             groups_failed.add(group_name)
         else:
             groups_succeeded.add(group_name)
-    response = BulkSmsResponse(
-        groups_succeeded=sorted(groups_succeeded),
-        groups_failed=sorted(groups_failed),
-    )
-    return response
+    response: BulkSmsResponse = {
+        "groups_succeeded": sorted(groups_succeeded),
+        "groups_failed": sorted(groups_failed),
+    }
+    return jsonify(response)
 
 
 def main():
@@ -99,7 +103,8 @@ def main():
     args = arg_parser.parse_args()
     port: int = args.port
 
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    initialize_app(app)
+    app.run(host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
