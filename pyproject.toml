@@ -27,3 +27,20 @@ dev = [
     "basedpyright>=1.40.0,<2",
     "ruff~=0.16.6",
 ]
+
+[tool.ruff]
+# This section ensures that ruff finds the python version declared in this file
+extend = "ruff.toml"
+
+[tool.basedpyright]
+pythonPlatform = "All"
+typeCheckingMode = "recommended"
+# Rule adjustments:
+reportAny = "hint"
+reportMissingParameterType = false
+reportUnannotatedClassAttribute = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+reportUnusedCallResult = false
+# Bad libs:
+# allowedUntypedLibraries = []

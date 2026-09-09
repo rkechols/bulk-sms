@@ -2,7 +2,8 @@ recipients*.json
 message.txt
 
 .vscode/settings.json
-.zed/
+.zed/*
+!.zed/tasks.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
