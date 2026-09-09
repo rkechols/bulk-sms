@@ -34,3 +34,11 @@ name = "ruff format"
 language = "system"
 entry = "uv run ruff format"
 types = ["python"]
+
+[[repos.hooks]]
+id = "gen-json-schemas"
+name = "generate JSON schemas"
+language = "system"
+files = '(.py|.schema.json)$'
+entry = "uv run generate_json_schemas.py"
+pass_filenames = false

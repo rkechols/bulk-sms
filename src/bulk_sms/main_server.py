@@ -14,9 +14,8 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
 
-from bulk_sms.schemas import Recipients, USAPhoneNumber
+from bulk_sms.schemas import USAPhoneNumber
 
 DOCS_ROUTE = "/docs"
 
@@ -69,16 +68,6 @@ app = FastAPI(title="Bulk SMS Server", docs_url=DOCS_ROUTE, lifespan=lifespan)
 @app.get("/")
 async def get_root() -> RedirectResponse:
     return RedirectResponse(DOCS_ROUTE)
-
-
-class BulkSmsRequest(BaseModel):
-    recipients: Recipients
-    message: Annotated[str, Field(min_length=1)]
-
-
-class BulkSmsResponse(BaseModel):
-    groups_succeeded: set[str]
-    groups_failed: set[str]
 
 
 @app.post("/bulk-sms", dependencies=[ValidatePasscodeDep])

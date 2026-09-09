@@ -1,7 +1,7 @@
 import re
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel
+from pydantic import AfterValidator, BaseModel, Field
 
 
 def _validate_usa_phone_number(s: str) -> str:
@@ -17,3 +17,13 @@ type USAPhoneNumber = Annotated[str, AfterValidator(_validate_usa_phone_number)]
 class Recipients(BaseModel):
     copy_on_all: dict[str, USAPhoneNumber]
     groups: dict[str, set[USAPhoneNumber]]
+
+
+class BulkSmsRequest(BaseModel):
+    recipients: Recipients
+    message: Annotated[str, Field(min_length=1)]
+
+
+class BulkSmsResponse(BaseModel):
+    groups_succeeded: set[str]
+    groups_failed: set[str]
