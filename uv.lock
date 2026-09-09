@@ -2,6 +2,9 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+overrides = [{ name = "pydantic-core", marker = "sys_platform != 'android'" }]
+
 [[package]]
 name = "annotated-doc"
 version = "0.0.5"
@@ -179,7 +182,7 @@ version = "2.13.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
-    { name = "pydantic-core" },
+    { name = "pydantic-core", marker = "sys_platform != 'android'" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
