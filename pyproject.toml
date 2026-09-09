@@ -17,3 +17,7 @@ dependencies = [
     "pydantic>=2.13.5,<3",
     "uvicorn[standard]~=0.52.4",
 ]
+
+[project.scripts]
+sms-server = "bulk_sms.main_server:main"
+sms-send = "bulk_sms.main_send:main"
