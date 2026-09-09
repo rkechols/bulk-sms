@@ -9,7 +9,7 @@ class USAPhoneNumber(str):
 
     @classmethod
     def normalize(cls, s: str) -> "USAPhoneNumber":
-        s = re.sub(r"-\s\(\)", "", s)  # Strip hyphens, whitespace, and parens
+        s = re.sub(r"[\-\s\(\)]", "", s)  # Strip hyphens, whitespace, and parens
         if not re.fullmatch(r"\+1\d{10}", s):
             raise ValueError("USA phone number must start with +1 and then contain exactly 10 additional digits")
         return USAPhoneNumber(s)
